@@ -64,6 +64,17 @@ class JsonProperty<T> extends ScriptProperty {
   }
 }
 
+class MentionMapper {
+  constructor(public mapData: { [orig: string]: string }) {}
+
+  map(s: string) {
+    return String(s).replace(
+      /@([a-zA-Z0-9-_]+)/g,
+      (_, p1) => `@${this.mapData[p1] || p1}`
+    );
+  }
+}
+
 const props = {
   alreadySentIssues: new JsonProperty<string[]>('alreadySentIssues'),
   alreadySentCommentIds: new JsonProperty<number[]>('alreadySentCommentIds'),
@@ -72,6 +83,7 @@ const props = {
   backlogApiKey: new StringProperty('backlogApiKey'),
   backlogProjectId: new StringProperty('backlogProjectId'),
   backlogUrl: new StringProperty('backlogUrl'),
+  mentionMap: new JsonProperty<{ [orig: string]: string }>('mentionMap'),
 };
 
 const apiPaths = {
@@ -118,6 +130,8 @@ export function main() {
   const issueLastUpdated = props.issueLastUpdated.get() || '';
   const backlogUrl = props.backlogUrl.get() || '';
 
+  const mentionMapper = new MentionMapper(props.mentionMap.get() || {});
+
   const issues: GetIssuesRes[] = JSON.parse(
     UrlFetchApp.fetch(
       getApiUrl(
@@ -143,7 +157,7 @@ export function main() {
   );
 
   newIssues.forEach((iss) => {
-    if (iss.description === null) {
+    if (iss.description === 'null') {
       return;
     }
     slack({
@@ -151,7 +165,7 @@ export function main() {
 :page_facing_up: ${iss.summary}
 :clock3: ${formatDate(new Date(iss.created))}
 :globe_with_meridians: ${backlogUrl}/view/${iss.issueKey}
-${iss.description}`,
+${mentionMapper.map(iss.description)}`,
     });
   });
 
@@ -195,7 +209,7 @@ ${iss.description}`,
 :globe_with_meridians: ${backlogUrl}/view/${iss.issueKey}#comment-${c.id}
 :page_facing_up: ${iss.summary}
 --
-${c.content}`,
+${mentionMapper.map(c.content)}`,
         });
       });
 
