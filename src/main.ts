@@ -143,11 +143,14 @@ export function main() {
   );
 
   newIssues.forEach((iss) => {
+    if (iss.description === null) {
+      return;
+    }
     slack({
       text: `:open_mouth: ${iss.createdUser.name}
+:page_facing_up: ${iss.summary}
 :clock3: ${formatDate(new Date(iss.created))}
 :globe_with_meridians: ${backlogUrl}/view/${iss.issueKey}
-:page_facing_up: ${iss.summary}
 ${iss.description}`,
     });
   });
