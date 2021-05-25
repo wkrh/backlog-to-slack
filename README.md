@@ -17,3 +17,9 @@ Secrets like access tokens and slack webhook urls are injected via GAS's script 
 const scriptProperties = PropertiesService.getScriptProperties();
 const secret = scriptProperties.getProperty("propertyName");
 ```
+
+## Script properties
+- `slackHook`: Webhook url of your slack apps https://api.slack.com/apps
+- `backlogApiKey`: API key of backlog. You can generate it at your backlog personal settings page.
+- `backlogUrl`: Project URL of backlog. e.g. https://example.backlog.com
+- `backlogProjectId`: Project ID (digits), which is found in API responses. Try `curl "https://example.backlog.jp/api/v2/projects?apiKey=$BACKLOG_API_KEY"`.

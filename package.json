@@ -2,7 +2,7 @@
   "name": "backlog-to-slack",
   "version": "1.0.0",
   "main": "index.js",
-  "author": "Atsushi Hirakawa <hirakawa@vectis.co.jp>",
+  "author": "Atsushi Hirakawa <hirakawaa@gmail.com>",
   "license": "MIT",
   "dependencies": {
     "@types/google-apps-script": "^1.0.15"
