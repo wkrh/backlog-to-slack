@@ -81,6 +81,7 @@ ${iss.description}`,
 :clock3: ${formatDate(new Date(c.created))}
 :globe_with_meridians: ${backlogUrl}/view/${iss.issueKey}#comment-${c.id}
 :page_facing_up: ${iss.summary}
+:checkered_flag: ${iss.status?.name}
 --
 ${c.content}`,
         });
@@ -106,6 +107,8 @@ interface GetIssuesRes {
   summary: string;
   issueKey: string;
   description: string;
+  status: { id: number; name: string };
+  assignee: { id: number; userId: string; name: string };
   updated: string;
   created: string;
   createdUser: {
