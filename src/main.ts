@@ -1,3 +1,105 @@
+export function main() {
+  const projectId = props.backlogProjectId.get() || '';
+  const alreadySentIssues = props.alreadySentIssues.get() || [];
+  const alreadySentCommentIds = props.alreadySentCommentIds.get() || [];
+  const issueLastUpdated = props.issueLastUpdated.get() || '';
+  const backlogUrl = props.backlogUrl.get() || '';
+
+  const issues: GetIssuesRes[] = JSON.parse(
+    UrlFetchApp.fetch(
+      getApiUrl(
+        'getIssues',
+        {},
+        {
+          'projectId[]': projectId,
+          updatedSince: getYesterday(),
+          sort: 'updated',
+          count: 100,
+        }
+      )
+    ).getContentText()
+  );
+
+  console.log(
+    'issues',
+    issues.map(iss => iss.issueKey)
+  );
+
+  const newIssues = issues.filter(
+    iss => !alreadySentIssues.includes(iss.issueKey)
+  );
+
+  newIssues.forEach(iss => {
+    if (iss.description === null) {
+      return;
+    }
+    slack({
+      text: `:open_mouth: ${iss.createdUser.name}
+:page_facing_up: ${iss.summary}
+:clock3: ${formatDate(new Date(iss.created))}
+:globe_with_meridians: ${backlogUrl}/view/${iss.issueKey}
+${iss.description}`,
+    });
+  });
+
+  console.log(
+    'newIssues',
+    newIssues.map(iss => iss.issueKey)
+  );
+
+  props.alreadySentIssues.set(
+    alreadySentIssues.concat(newIssues.map(e => e.issueKey))
+  );
+
+  console.log(
+    'issue.updated',
+    issues.map(iss => [iss.updated, iss.updated > issueLastUpdated])
+  );
+
+  issues
+    .filter(iss => iss.updated > issueLastUpdated)
+    .forEach(iss => {
+      const comments: GetCommentsRes[] = JSON.parse(
+        UrlFetchApp.fetch(
+          getApiUrl(
+            'getComments',
+            { issueIdOrKey: iss.issueKey },
+            {
+              count: 100,
+            }
+          )
+        ).getContentText()
+      );
+
+      const newComments = comments.filter(
+        c => !alreadySentCommentIds.includes(c.id)
+      );
+
+      newComments.forEach(c => {
+        slack({
+          text: `:open_mouth: ${c.createdUser.name}
+:clock3: ${formatDate(new Date(c.created))}
+:globe_with_meridians: ${backlogUrl}/view/${iss.issueKey}#comment-${c.id}
+:page_facing_up: ${iss.summary}
+--
+${c.content}`,
+        });
+      });
+
+      props.alreadySentCommentIds.set(
+        (props.alreadySentCommentIds.get() || []).concat(
+          newComments.map(c => c.id)
+        )
+      );
+    });
+
+  props.issueLastUpdated.set(
+    issues
+      .map(iss => iss.updated)
+      .reduce((max, cur) => (cur > max ? cur : max), '')
+  );
+}
+
 interface GetIssuesRes {
   id: number;
   keyId: number;
@@ -110,105 +212,3 @@ const formatDate = new Intl.DateTimeFormat('ja-JP-u-ca-iso8601', {
   minute: '2-digit',
   second: '2-digit',
 }).format;
-
-export function main() {
-  const projectId = props.backlogProjectId.get() || '';
-  const alreadySentIssues = props.alreadySentIssues.get() || [];
-  const alreadySentCommentIds = props.alreadySentCommentIds.get() || [];
-  const issueLastUpdated = props.issueLastUpdated.get() || '';
-  const backlogUrl = props.backlogUrl.get() || '';
-
-  const issues: GetIssuesRes[] = JSON.parse(
-    UrlFetchApp.fetch(
-      getApiUrl(
-        'getIssues',
-        {},
-        {
-          'projectId[]': projectId,
-          updatedSince: getYesterday(),
-          sort: 'updated',
-          count: 100,
-        }
-      )
-    ).getContentText()
-  );
-
-  console.log(
-    'issues',
-    issues.map((iss) => iss.issueKey)
-  );
-
-  const newIssues = issues.filter(
-    (iss) => !alreadySentIssues.includes(iss.issueKey)
-  );
-
-  newIssues.forEach((iss) => {
-    if (iss.description === null) {
-      return;
-    }
-    slack({
-      text: `:open_mouth: ${iss.createdUser.name}
-:page_facing_up: ${iss.summary}
-:clock3: ${formatDate(new Date(iss.created))}
-:globe_with_meridians: ${backlogUrl}/view/${iss.issueKey}
-${iss.description}`,
-    });
-  });
-
-  console.log(
-    'newIssues',
-    newIssues.map((iss) => iss.issueKey)
-  );
-
-  props.alreadySentIssues.set(
-    alreadySentIssues.concat(newIssues.map((e) => e.issueKey))
-  );
-
-  console.log(
-    'issue.updated',
-    issues.map((iss) => [iss.updated, iss.updated > issueLastUpdated])
-  );
-
-  issues
-    .filter((iss) => iss.updated > issueLastUpdated)
-    .forEach((iss) => {
-      const comments: GetCommentsRes[] = JSON.parse(
-        UrlFetchApp.fetch(
-          getApiUrl(
-            'getComments',
-            { issueIdOrKey: iss.issueKey },
-            {
-              count: 100,
-            }
-          )
-        ).getContentText()
-      );
-
-      const newComments = comments.filter(
-        (c) => !alreadySentCommentIds.includes(c.id)
-      );
-
-      newComments.forEach((c) => {
-        slack({
-          text: `:open_mouth: ${c.createdUser.name}
-:clock3: ${formatDate(new Date(c.created))}
-:globe_with_meridians: ${backlogUrl}/view/${iss.issueKey}#comment-${c.id}
-:page_facing_up: ${iss.summary}
---
-${c.content}`,
-        });
-      });
-
-      props.alreadySentCommentIds.set(
-        (props.alreadySentCommentIds.get() || []).concat(
-          newComments.map((c) => c.id)
-        )
-      );
-    });
-
-  props.issueLastUpdated.set(
-    issues
-      .map((iss) => iss.updated)
-      .reduce((max, cur) => (cur > max ? cur : max), '')
-  );
-}
