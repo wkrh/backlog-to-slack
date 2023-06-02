@@ -26,7 +26,9 @@ export function main() {
   );
 
   const newIssues = issues.filter(
-    iss => !alreadySentIssues.includes(iss.issueKey)
+    iss =>
+      !alreadySentIssues.includes(iss.issueKey) &&
+      new Date(iss.created) > new Date(Date.now() - 1000 * 60 * 60 * 24)
   );
 
   newIssues.forEach(iss => {
@@ -76,6 +78,9 @@ ${iss.description}`,
       );
 
       newComments.forEach(c => {
+        if (!c.content) {
+          return;
+        }
         slack({
           text: `:open_mouth: ${c.createdUser.name}
 :clock3: ${formatDate(new Date(c.created))}
