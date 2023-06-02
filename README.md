@@ -7,6 +7,7 @@ npm i -g @google/clasp  # install clasp command
 yarn  # install dependencies
 clasp login  # login to Google
 clasp create backlog-to-slack --rootDir src  # create GAS Project
+mv src/.clasp.json .
 clasp push  # push script to Google
 clasp open  # open project page in browser
 ```
